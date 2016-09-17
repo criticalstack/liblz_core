@@ -36,14 +36,14 @@ endif ()
 # create a copy of sys/tree.h if not found
 if (NOT HAS_SYS_TREE)
 	configure_file (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
-	                ${LIBLZ_INC_PATH}/sys/tree.h)
+	                ${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h)
 
 endif ()
 
 # create a copy of sys/queue.h if not found
 if (NOT HAS_SYS_QUEUE)
 	configure_file (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
-	                ${LIBLZ_INC_PATH}/sys/queue.h)
+	                ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h)
 endif ()
 
 
