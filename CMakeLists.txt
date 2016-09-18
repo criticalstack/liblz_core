@@ -35,20 +35,31 @@ endif ()
 
 # create a copy of sys/tree.h if not found
 if (NOT HAS_SYS_TREE)
-	include_directories(${PROJECT_BINARY_DIR}/include/liblz)
-	configure_file (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
-	                ${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h)
+	include_directories (${PROJECT_BINARY_DIR}/include/liblz)
+	configure_file      (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
+	                     ${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h)
 
+	install (
+		FILES
+			${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h
+		DESTINATION
+			include/liblz/sys)
 endif ()
 
 # create a copy of sys/queue.h if not found
 if (NOT HAS_SYS_QUEUE)
-	include_directories(${PROJECT_BINARY_DIR}/include/liblz)
-	configure_file (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
-	                ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h)
+	include_directories (${PROJECT_BINARY_DIR}/include/liblz)
+	configure_file      (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
+	                     ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h)
+
+	install (
+		FILES
+			${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h
+		DESTINATION
+			include/liblz/sys)
 endif ()
 
 add_subdirectory (src)
 
-add_library  (lz_core ${LZ_SOURCES}) 
-install      (TARGETS lz_core DESTINATION lib) 
+add_library  (lz_core ${LZ_SOURCES})
+install      (TARGETS lz_core DESTINATION lib)
