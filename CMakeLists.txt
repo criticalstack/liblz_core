@@ -46,5 +46,7 @@ if (NOT HAS_SYS_QUEUE)
 	                ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h)
 endif ()
 
+add_subdirectory (src)
 
-add_subdirectory(src)
+add_library  (lz_core ${LZ_SOURCES}) 
+install      (TARGETS lz_core DESTINATION lib) 
