@@ -19,7 +19,7 @@ install (FILES heap.h
          RENAME      lz_heap.h)
 
 install (FILES kvmap.h
-         DESTINATION include/liblz/proc
+         DESTINATION include/liblz/core
          RENAME      lz_kvmap.h
 )
 
