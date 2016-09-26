@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <sys/queue.h>
 
-#include "lzapi.h"
-#include "lz_heap.h"
+#include <liblz.h>
+#include <liblz/lzapi.h>
 
 struct lz_heap_page_s;
 typedef struct lz_heap_page_s lz_heap_page;

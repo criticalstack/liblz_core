@@ -1,7 +1,7 @@
 #ifndef __LZ_HEAP_H__
 #define __LZ_HEAP_H__
 
-#include "liblz.h"
+#include <liblz.h>
 
 struct lz_heap_s;
 

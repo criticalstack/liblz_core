@@ -15,13 +15,14 @@ else()
 endif()
 
 set (LIBLZ_INS_PATH ${PROJECT_BINARY_DIR}/install)
-set (LIBLZ_LIB_PATH ${LIBLZ_INS_PATH}/lib)
-set (LIBLZ_INC_PATH ${LIBLZ_INS_PATH}/include)
+set (LIBLZ_LIB_PATH ${PROJECT_BINARY_DIR}/lib)
+set (LIBLZ_INC_PATH ${PROJECT_BINARY_DIR}/include)
 
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIBLZ_LIB_PATH})
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIBLZ_LIB_PATH})
 
 include_directories (${LIBLZ_INC_PATH}
+					 ${PROJECT_BINARY_DIR}/include
                      ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 check_include_files   (sys/tree.h          HAS_SYS_TREE)
@@ -39,11 +40,8 @@ if (NOT HAS_SYS_TREE)
 	configure_file      (${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
 	                     ${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h)
 
-	install (
-		FILES
-			${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h
-		DESTINATION
-			include/liblz/sys)
+	install (FILES ${PROJECT_BINARY_DIR}/include/liblz/sys/tree.h
+			 DESTINATION include/liblz/sys)
 endif ()
 
 # create a copy of sys/queue.h if not found
@@ -53,13 +51,11 @@ if (NOT HAS_SYS_QUEUE)
 	                     ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h)
 
 	install (
-		FILES
-			${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h
-		DESTINATION
-			include/liblz/sys)
+		FILES       ${PROJECT_BINARY_DIR}/include/liblz/sys/queue.h
+		DESTINATION include/liblz/sys)
 endif ()
 
 add_subdirectory (src)
 
-add_library  (lz_core ${LZ_SOURCES})
-install      (TARGETS lz_core DESTINATION lib)
+#add_library  (lz_core ${LZ_SOURCES})
+#install      (TARGETS lz_core DESTINATION lib)

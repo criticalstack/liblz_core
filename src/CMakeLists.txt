@@ -1,24 +1,43 @@
-macro (add_sources)
-	file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 
-	foreach (_src ${ARGN})
-		if (_relPath)
-			list (APPEND SRCS "${_relPath}/${_src}")
-		else()
-			list (APPEND SRCS "${_src}")
-		endif()
-	endforeach()
+add_library (lz_core
+			 heap.c
+			 kvmap.c
+			 tailq.c)
+			 
+	 #target_link_libraries(lz_core lz_heap lz_tailq lz_kvmap)
 
-	if (_relPath)
-		set (SRCS ${SRCS} PARENT_SCOPE)
-	endif()
-endmacro()
+install (TARGETS lz_core DESTINATION lib)
 
-add_subdirectory (heap)
-add_subdirectory (kvmap)
-add_subdirectory (tailq)
+install (FILES liblz.h
+		 DESTINATION include)
 
-install (FILES   liblz.h DESTINATION include)
-install (FILES   lzapi.h DESTINATION include/liblz)
+install (FILES lzapi.h
+		 DESTINATION include/liblz)
 
-set (LZ_SOURCES ${SRCS} PARENT_SCOPE)
+install (FILES heap.h
+         DESTINATION include/liblz/core
+         RENAME      lz_heap.h)
+
+install (FILES kvmap.h
+         DESTINATION include/liblz/proc
+         RENAME      lz_kvmap.h
+)
+
+install (FILES tailq.h
+         DESTINATION include/liblz/core
+         RENAME      lz_tailq.h
+)
+configure_file (${CMAKE_SOURCE_DIR}/src/heap.h
+                ${PROJECT_BINARY_DIR}/include/liblz/core/lz_heap.h)
+
+configure_file (${CMAKE_SOURCE_DIR}/src/kvmap.h
+                ${CMAKE_BINARY_DIR}/include/liblz/core/lz_kvmap.h)
+
+configure_file (${CMAKE_SOURCE_DIR}/src/tailq.h
+                ${CMAKE_BINARY_DIR}/include/liblz/core/lz_tailq.h)
+
+configure_file (${CMAKE_SOURCE_DIR}/src/lzapi.h
+                ${CMAKE_BINARY_DIR}/include/liblz)
+
+configure_file (${CMAKE_SOURCE_DIR}/src/liblz.h
+                ${CMAKE_BINARY_DIR}/include)

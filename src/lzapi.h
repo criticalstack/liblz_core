@@ -4,14 +4,11 @@
 #include <liblz.h>
 #include <sys/tree.h>
 
-#if defined __GNUC__ || defined __llvm__
 #define lz_likely(x)   __builtin_expect(!!(x), 1)
 #define lz_unlikely(x) __builtin_expect(!!(x), 0)
-#else
-#define lz_likely(x)   (x)
-#define lz_unlikely(x) (x)
-#endif
 
+#define lz_alias(_name, _aliasname) \
+    __typeof(_name) _aliasname __attribute__((alias(# _name)))
 
 #ifndef TAILQ_FOREACH_SAFE
 #define TAILQ_FOREACH_SAFE(var, head, field, tvar)        \
@@ -133,11 +130,8 @@ lz_atoi(const char * line, size_t n)
     }
 }
 
-
 #define lz_isascii(c) \
     ((unsigned char)(c) - 040u < 0137u)
 
-#define lz_alias(_name, _aliasname) \
-    __typeof(_name) _aliasname __attribute__((alias(# _name)))
 
 #endif

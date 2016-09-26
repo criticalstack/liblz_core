@@ -7,7 +7,7 @@
 #include <assert.h>
 
 #include "lzapi.h"
-#include "lz_kvmap.h"
+#include "kvmap.h"
 
 typedef uint32_t (*hash_fn)(const char * key, size_t len);
 
