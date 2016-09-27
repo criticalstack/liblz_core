@@ -5,9 +5,11 @@
 #include <errno.h>
 #include <sys/queue.h>
 
+#include <liblz.h>
 #include <liblz/lzapi.h>
 #include <liblz/core/lz_heap.h>
-#include <liblz/core/lz_tailq.h>
+
+#include "tailq.h"
 
 static __thread void * __elem_heap = NULL;
 
@@ -27,24 +29,39 @@ struct lz_tailq {
     struct __lz_tailqhd elems;
 };
 
+static lz_tailq_elem * tq_first_(lz_tailq * tq);
+static lz_tailq_elem * tq_next_(lz_tailq_elem * elem);
+static void          * tq_elem_data_(lz_tailq_elem * elem);
+static void            tq_elem_free_(lz_tailq_elem * elem);
+static int             tq_elem_remove_(lz_tailq_elem * elem);
+static int             tq_foreach_(lz_tailq *, lz_tailq_iterfn, void *);
+static lz_tailq_elem * tq_prepend_elem(lz_tailq *, lz_tailq_elem *);
+static lz_tailq_elem * tq_append_(lz_tailq *, void *, size_t, lz_tailq_freefn);
+static lz_tailq_elem * tq_prepend_elem(lz_tailq * tq, lz_tailq_elem * elem);
+static lz_tailq_elem * tq_elem_new_(void *, size_t, lz_tailq_freefn);
+
+static size_t tq_elem_size_(lz_tailq_elem * elem);
+
 
 static void
-_lz_tailq_freefn(void * data)
+tq_freefn_(void * data)
 {
-    if (data)
+    if (data == NULL)
     {
-        free(data);
+        return;
     }
+
+    lz_safe_free(data, free);
 }
 
-lz_tailq *
-lz_tailq_new(void)
+static lz_tailq *
+tq_new_(void)
 {
     lz_tailq * tq;
 
     tq = malloc(sizeof(lz_tailq));
 
-    if (lz_unlikely(tq == NULL))
+    if (lz_unlikely((tq = malloc(sizeof(lz_tailq)))))
     {
         return NULL;
     }
@@ -56,8 +73,8 @@ lz_tailq_new(void)
     return tq;
 }
 
-void
-lz_tailq_free(lz_tailq * tq)
+static void
+tq_free_(lz_tailq * tq)
 {
     lz_tailq_elem * elem;
     lz_tailq_elem * temp;
@@ -67,49 +84,50 @@ lz_tailq_free(lz_tailq * tq)
         return;
     }
 
-    for (elem = lz_tailq_first(tq); elem != NULL; elem = temp)
+    for (elem = tq_first_(tq); elem != NULL; elem = temp)
     {
-        temp = lz_tailq_next(elem);
+        temp = tq_next_(elem);
 
-        lz_tailq_elem_remove(elem);
-        lz_tailq_elem_free(elem);
+        tq_elem_remove_(elem);
+        lz_safe_free(elem, tq_elem_free_);
     }
 
-    free(tq);
+    lz_safe_free(tq, free);
 }
 
-void
-lz_tailq_clear(lz_tailq * tq)
+static void
+tq_clear_(lz_tailq * tq)
 {
     lz_tailq_elem * elem;
     lz_tailq_elem * temp;
 
-    if (!tq)
+    if (lz_unlikely(tq == NULL))
     {
         return;
     }
 
-    for (elem = lz_tailq_first(tq); elem != NULL; elem = temp)
+    for (elem = tq_first_(tq); elem != NULL; elem = temp)
     {
-        temp = lz_tailq_next(elem);
+        temp = tq_next_(elem);
 
-        lz_tailq_elem_remove(elem);
-        lz_tailq_elem_free(elem);
+        tq_elem_remove_(elem);
+        tq_elem_free_(elem);
     }
 
-    TAILQ_INIT(&tq->elems);
     tq->n_elem = 0;
+
+    TAILQ_INIT(&tq->elems);
 }
 
 static int
-lz_tailq_dup_itercb(lz_tailq_elem * elem, void * arg)
+tq_dup_itercb_(lz_tailq_elem * elem, void * arg)
 {
     lz_tailq * tq = arg;
     size_t     len;
     void     * data;
 
-    len  = lz_tailq_elem_size(elem);
-    data = lz_tailq_elem_data(elem);
+    len  = tq_elem_size_(elem);
+    data = tq_elem_data_(elem);
 
     if (len)
     {
@@ -118,10 +136,10 @@ lz_tailq_dup_itercb(lz_tailq_elem * elem, void * arg)
             return -1;
         }
 
-        memcpy(data, lz_tailq_elem_data(elem), len);
+        memcpy(data, tq_elem_data_(elem), len);
     }
 
-    if (!lz_tailq_append(tq, data, len, elem->free_fn))
+    if (!tq_append_(tq, data, len, elem->free_fn))
     {
         return -1;
     }
@@ -129,8 +147,8 @@ lz_tailq_dup_itercb(lz_tailq_elem * elem, void * arg)
     return 0;
 }
 
-lz_tailq *
-lz_tailq_dup(lz_tailq * tq)
+static lz_tailq *
+tq_dup_(lz_tailq * tq)
 {
     lz_tailq * new_tq;
 
@@ -139,22 +157,22 @@ lz_tailq_dup(lz_tailq * tq)
         return NULL;
     }
 
-    if (!(new_tq = lz_tailq_new()))
+    if (!(new_tq = tq_new_()))
     {
         return NULL;
     }
 
-    if (lz_tailq_for_each(tq, lz_tailq_dup_itercb, new_tq))
+    if (tq_foreach_(tq, tq_dup_itercb_, new_tq))
     {
-        lz_tailq_free(new_tq);
+        tq_free_(new_tq);
         return NULL;
     }
 
     return new_tq;
 }
 
-lz_tailq_elem *
-lz_tailq_elem_new(void * data, size_t len, lz_tailq_freefn freefn)
+static lz_tailq_elem *
+tq_elem_new_(void * data, size_t len, lz_tailq_freefn freefn)
 {
     lz_tailq_elem * elem;
 
@@ -178,14 +196,14 @@ lz_tailq_elem_new(void * data, size_t len, lz_tailq_freefn freefn)
     {
         elem->free_fn = freefn;
     } else {
-        elem->free_fn = _lz_tailq_freefn;
+        elem->free_fn = tq_freefn_;
     }
 
     return elem;
 }
 
-void
-lz_tailq_elem_free(lz_tailq_elem * elem)
+static void
+tq_elem_free_(lz_tailq_elem * elem)
 {
     if (lz_unlikely(elem == NULL))
     {
@@ -194,37 +212,17 @@ lz_tailq_elem_free(lz_tailq_elem * elem)
 
     if (lz_likely(elem->data != NULL))
     {
-        (elem->free_fn)(elem->data);
+        lz_safe_free(elem->data, elem->free_fn);
     }
 
     lz_heap_free(__elem_heap, elem);
     /* free(elem); */
 }
 
-lz_tailq_elem *
-lz_tailq_append(lz_tailq * tq, void * data, size_t len, lz_tailq_freefn freefn)
+static lz_tailq_elem *
+tq_append_elem_(lz_tailq * tq, lz_tailq_elem * elem)
 {
-    lz_tailq_elem * elem;
-
-    if (lz_unlikely(tq == NULL))
-    {
-        return NULL;
-    }
-
-    elem = lz_tailq_elem_new(data, len, freefn);
-
-    if (lz_unlikely(elem == NULL))
-    {
-        return NULL;
-    }
-
-    return lz_tailq_append_elem(tq, elem);
-}
-
-lz_tailq_elem *
-lz_tailq_append_elem(lz_tailq * tq, lz_tailq_elem * elem)
-{
-    if (!tq || !elem)
+    if (lz_unlikely(!tq || !elem))
     {
         return NULL;
     }
@@ -237,28 +235,28 @@ lz_tailq_append_elem(lz_tailq * tq, lz_tailq_elem * elem)
     return elem;
 }
 
-lz_tailq_elem *
-lz_tailq_prepend(lz_tailq * tq, void * data, size_t len, lz_tailq_freefn freefn)
+static lz_tailq_elem *
+tq_append_(lz_tailq * tq, void * data, size_t len, lz_tailq_freefn freefn)
 {
     lz_tailq_elem * elem;
 
-    if (!tq)
+    if (lz_unlikely(tq == NULL))
     {
         return NULL;
     }
 
-    if (!(elem = lz_tailq_elem_new(data, len, freefn)))
+    if (!(elem = tq_elem_new_(data, len, freefn)))
     {
         return NULL;
     }
 
-    return lz_tailq_prepend_elem(tq, elem);
+    return tq_append_elem_(tq, elem);
 }
 
-lz_tailq_elem *
-lz_tailq_prepend_elem(lz_tailq * tq, lz_tailq_elem * elem)
+static lz_tailq_elem *
+tq_prepend_elem_(lz_tailq * tq, lz_tailq_elem * elem)
 {
-    if (!tq || !elem)
+    if (lz_unlikely(!tq || !elem))
     {
         return NULL;
     }
@@ -271,56 +269,54 @@ lz_tailq_prepend_elem(lz_tailq * tq, lz_tailq_elem * elem)
     return elem;
 }
 
-lz_tailq_elem *
-lz_tailq_first(lz_tailq * tq)
+static lz_tailq_elem *
+tq_prepend_(lz_tailq * tq, void * data, size_t len, lz_tailq_freefn freefn)
 {
+    lz_tailq_elem * elem;
+
     if (lz_unlikely(tq == NULL))
     {
         return NULL;
-    } else {
-        return TAILQ_FIRST(&tq->elems);
     }
-}
 
-lz_tailq_elem *
-lz_tailq_last(lz_tailq * tq)
-{
-    if (lz_unlikely(tq == NULL))
-    {
-        return NULL;
-    } else {
-        return TAILQ_LAST(&tq->elems, __lz_tailqhd);
-    }
-}
-
-lz_tailq_elem *
-lz_tailq_next(lz_tailq_elem * elem)
-{
-    if (!elem)
+    if (!(elem = tq_elem_new_(data, len, freefn)))
     {
         return NULL;
     }
 
-    return TAILQ_NEXT(elem, next);
+    return tq_prepend_elem_(tq, elem);
 }
 
-lz_tailq_elem *
-lz_tailq_prev(lz_tailq_elem * elem)
+static lz_tailq_elem *
+tq_first_(lz_tailq * tq)
 {
-    if (!elem)
-    {
-        return NULL;
-    }
-
-    return TAILQ_PREV(elem, __lz_tailqhd, next);
+    return tq ? TAILQ_FIRST(&tq->elems) : NULL;
 }
 
-int
-lz_tailq_elem_remove(lz_tailq_elem * elem)
+static lz_tailq_elem *
+tq_last_(lz_tailq * tq)
+{
+    return tq ? TAILQ_LAST(&tq->elems, __lz_tailqhd) : NULL;
+}
+
+static lz_tailq_elem *
+tq_next_(lz_tailq_elem * elem)
+{
+    return elem ? TAILQ_NEXT(elem, next) : NULL;
+}
+
+static lz_tailq_elem *
+tq_prev_(lz_tailq_elem * elem)
+{
+    return elem ? TAILQ_PREV(elem, __lz_tailqhd, next) : NULL;
+}
+
+static int
+tq_elem_remove_(lz_tailq_elem * elem)
 {
     lz_tailq * head;
 
-    if (!elem)
+    if (lz_unlikely(!elem))
     {
         return -1;
     }
@@ -337,23 +333,21 @@ lz_tailq_elem_remove(lz_tailq_elem * elem)
     return 0;
 }
 
-int
-lz_tailq_for_each(lz_tailq * tq, lz_tailq_iterfn iterfn, void * arg)
+static int
+tq_foreach_(lz_tailq * tq, lz_tailq_iterfn iterfn, void * arg)
 {
     lz_tailq_elem * elem;
     lz_tailq_elem * temp;
+    int             sres;
 
-    if (!tq || !iterfn)
+    if (lz_unlikely(!tq || !iterfn))
     {
         return -1;
     }
 
-
     TAILQ_FOREACH_SAFE(elem, &tq->elems, next, temp)
     {
-        int sres;
-
-        if ((sres = (iterfn)(elem, arg)) != 0)
+        if ((sres = (iterfn)(elem, arg)))
         {
             return sres;
         }
@@ -362,52 +356,33 @@ lz_tailq_for_each(lz_tailq * tq, lz_tailq_iterfn iterfn, void * arg)
     return 0;
 }
 
-void *
-lz_tailq_elem_data(lz_tailq_elem * elem)
+static void *
+tq_elem_data_(lz_tailq_elem * elem)
 {
-    if (lz_likely(elem != NULL))
-    {
-        return elem->data;
-    } else {
-        return NULL;
-    }
+    return elem ? elem->data : NULL;
 }
 
-size_t
-lz_tailq_elem_size(lz_tailq_elem * elem)
+static size_t
+tq_elem_size_(lz_tailq_elem * elem)
 {
-    if (lz_likely(elem != NULL))
-    {
-        return elem->len;
-    } else {
-        return 0;
-    }
+    return elem ? elem->len : 0;
 }
 
-lz_tailq *
-lz_tailq_elem_head(lz_tailq_elem * elem)
+static lz_tailq *
+tq_elem_head_(lz_tailq_elem * elem)
 {
-    if (lz_likely(elem != NULL))
-    {
-        return elem->tq_head;
-    } else {
-        return NULL;
-    }
+    return elem ? elem->tq_head : NULL;
 }
 
-size_t
-lz_tailq_size(lz_tailq * head)
+/* NOTE: we should think about changing this to ssize_t */
+static size_t
+tq_size_(lz_tailq * head)
 {
-    if (!head)
-    {
-        return 0;
-    }
-
-    return head->n_elem;
+    return head ? head->n_elem : 0;
 }
 
-lz_tailq_elem *
-lz_tailq_elem_find(lz_tailq * tq, void * data)
+static lz_tailq_elem *
+tq_elem_find_(lz_tailq * tq, void * data)
 {
     lz_tailq_elem * elem;
     lz_tailq_elem * temp;
@@ -416,21 +391,21 @@ lz_tailq_elem_find(lz_tailq * tq, void * data)
      * floats your boat. I sometimes use it because I'm an idiot.
      */
 
-    for (elem = lz_tailq_first(tq); elem != NULL; elem = temp)
+    for (elem = tq_first_(tq); elem != NULL; elem = temp)
     {
-        temp = lz_tailq_next(elem);
+        temp = tq_next_(elem);
+    }
 
-        if (lz_tailq_elem_data(elem) == data)
-        {
-            return elem;
-        }
+    if (tq_elem_data_(elem) == data)
+    {
+        return elem;
     }
 
     return NULL;
 }
 
-void *
-lz_tailq_get_at_index(lz_tailq * tq, int index)
+static void *
+tq_get_at_index_(lz_tailq * tq, int index)
 {
     lz_tailq_elem * elem;
     lz_tailq_elem * temp;
@@ -438,13 +413,13 @@ lz_tailq_get_at_index(lz_tailq * tq, int index)
 
     i = 0;
 
-    for (elem = lz_tailq_first(tq); elem; elem = temp)
+    for (elem = tq_first_(tq); elem; elem = temp)
     {
-        temp = lz_tailq_next(elem);
+        temp = tq_next_(elem);
 
         if (i == index)
         {
-            return lz_tailq_elem_data(elem);
+            return tq_elem_data_(elem);
         }
 
         i++;
