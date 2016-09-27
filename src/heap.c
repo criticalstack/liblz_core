@@ -15,7 +15,7 @@ typedef struct lz_heap_page_s lz_heap_page;
 
 struct lz_heap_page_s {
     SLIST_ENTRY(lz_heap_page_s) next;
-    char    data[];
+    char data[];
 };
 
 struct lz_heap_s {
@@ -27,10 +27,14 @@ struct lz_heap_s {
 
 
 static lz_heap_page *
-_lz_heap_page_new(lz_heap * heap) {
+heap_page_new_(lz_heap * heap)
+{
     lz_heap_page * page;
 
-    page       = malloc(heap->page_size + sizeof(lz_heap_page));
+    if (!(page = malloc(heap->page_size + sizeof(lz_heap_page))))
+    {
+        return NULL;
+    }
 
     SLIST_INSERT_HEAD(&heap->page_list_free, page, next);
 
@@ -39,10 +43,12 @@ _lz_heap_page_new(lz_heap * heap) {
 
 
 static lz_heap *
-_lz_heap_new(size_t elts, size_t size) {
+heap_new_(size_t elts, size_t size)
+{
     lz_heap * heap;
 
-    if (!(heap = malloc(sizeof(lz_heap)))) {
+    if (!(heap = malloc(sizeof(lz_heap))))
+    {
         return NULL;
     }
 
@@ -51,46 +57,56 @@ _lz_heap_new(size_t elts, size_t size) {
     SLIST_INIT(&heap->page_list_free);
     SLIST_INIT(&heap->page_list_used);
 
-    while (elts-- > 0) {
-        _lz_heap_page_new(heap);
+    while (elts-- > 0)
+    {
+        if (heap_page_new_(heap) == NULL)
+        {
+            return NULL;
+        }
     }
 
     return heap;
 } /* _lz_heap_new */
 
 static void
-_lz_heap_free(lz_heap * heap, void * d) {
+heap_free_(lz_heap * heap, void * d)
+{
     lz_heap_page * page;
 
-    if (lz_unlikely(heap == NULL)) {
+    if (lz_unlikely(!heap || !d))
+    {
         return;
     }
 
-    lz_assert(d != NULL);
-
     page = (lz_heap_page *)((char *)(d - offsetof(lz_heap_page, data)));
-    lz_assert(page != NULL);
-    lz_assert(page->data == d);
+
+    /* NOTE: we should return something to designate errors like this */
+    if (!page || !(page->data == d))
+    {
+        return;
+    }
 
     SLIST_REMOVE(&heap->page_list_used, page, lz_heap_page_s, next);
     SLIST_INSERT_HEAD(&heap->page_list_free, page, next);
 }
 
-void
-lz_heap_free(lz_heap * heap, void * data) {
-    return _lz_heap_free(heap, data);
-}
-
 static void *
-_lz_heap_alloc(lz_heap * heap) {
+heap_alloc_(lz_heap * heap)
+{
     lz_heap_page * page;
 
-    if (SLIST_EMPTY(&heap->page_list_free)) {
-        _lz_heap_page_new(heap);
+    if (SLIST_EMPTY(&heap->page_list_free))
+    {
+        if (!heap_page_new_(heap))
+        {
+            return NULL;
+        }
     }
 
-    page = SLIST_FIRST(&heap->page_list_free);
-    lz_assert(page != NULL);
+    if (!(page = SLIST_FIRST(&heap->page_list_free)))
+    {
+        return NULL;
+    }
 
     SLIST_REMOVE(&heap->page_list_free, page, lz_heap_page_s, next);
     SLIST_INSERT_HEAD(&heap->page_list_used, page, next);
@@ -98,13 +114,6 @@ _lz_heap_alloc(lz_heap * heap) {
     return page->data;
 }
 
-void *
-lz_heap_alloc(lz_heap * heap) {
-    return _lz_heap_alloc(heap);
-}
-
-lz_heap *
-lz_heap_new(size_t size, size_t elts) {
-    return _lz_heap_new(elts, size);
-}
-
+lz_alias(heap_alloc_, lz_heap_alloc);
+lz_alias(heap_new_, lz_heap_new);
+lz_alias(heap_free_, lz_heap_free);
