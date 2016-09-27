@@ -1,6 +1,7 @@
 #ifndef __LZ_FILE_H__
 #define __LZ_FILE_H__
 
+#include <dirent.h>
 
 /**
  * @brief the callback function decl.
