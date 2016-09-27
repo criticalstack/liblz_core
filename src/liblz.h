@@ -11,5 +11,6 @@
 #include <liblz/core/lz_heap.h>
 #include <liblz/core/lz_tailq.h>
 #include <liblz/core/lz_kvmap.h>
+#include <liblz/core/lz_file.h>
 
 #endif

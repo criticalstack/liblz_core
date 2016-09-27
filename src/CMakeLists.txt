@@ -5,8 +5,6 @@ add_library (lz_core
 			 tailq.c
 			 ffile.c
 )
-			 
-	 #target_link_libraries(lz_core lz_heap lz_tailq lz_kvmap)
 
 install (TARGETS lz_core DESTINATION lib)
 
