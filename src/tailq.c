@@ -428,3 +428,7 @@ tq_get_at_index_(lz_tailq * tq, int index)
     return NULL;
 }
 
+lz_alias(tq_new_, lz_tailq_new);
+lz_alias(tq_free_, lz_tailq_free);
+lz_alias(tq_size_, lz_tailq_size);
+
