@@ -119,58 +119,6 @@ tq_clear_(lz_tailq * tq)
     TAILQ_INIT(&tq->elems);
 }
 
-static int
-tq_dup_itercb_(lz_tailq_elem * elem, void * arg)
-{
-    lz_tailq * tq = arg;
-    size_t     len;
-    void     * data;
-
-    len  = tq_elem_size_(elem);
-    data = tq_elem_data_(elem);
-
-    if (len)
-    {
-        if (!(data = malloc(len)))
-        {
-            return -1;
-        }
-
-        memcpy(data, tq_elem_data_(elem), len);
-    }
-
-    if (!tq_append_(tq, data, len, elem->free_fn))
-    {
-        return -1;
-    }
-
-    return 0;
-}
-
-static lz_tailq *
-tq_dup_(lz_tailq * tq)
-{
-    lz_tailq * new_tq;
-
-    if (tq == NULL)
-    {
-        return NULL;
-    }
-
-    if (!(new_tq = tq_new_()))
-    {
-        return NULL;
-    }
-
-    if (tq_foreach_(tq, tq_dup_itercb_, new_tq))
-    {
-        tq_free_(new_tq);
-        return NULL;
-    }
-
-    return new_tq;
-}
-
 static lz_tailq_elem *
 tq_elem_new_(void * data, size_t len, lz_tailq_freefn freefn)
 {
@@ -192,12 +140,7 @@ tq_elem_new_(void * data, size_t len, lz_tailq_freefn freefn)
     elem->len     = len;
     elem->tq_head = NULL;
 
-    if (lz_likely(freefn != NULL))
-    {
-        elem->free_fn = freefn;
-    } else {
-        elem->free_fn = tq_freefn_;
-    }
+    elem->free_fn = freefn ? : tq_freefn_;
 
     return elem;
 }
@@ -381,30 +324,7 @@ tq_size_(lz_tailq * head)
     return head ? head->n_elem : 0;
 }
 
-static lz_tailq_elem *
-tq_elem_find_(lz_tailq * tq, void * data)
-{
-    lz_tailq_elem * elem;
-    lz_tailq_elem * temp;
-
-    /* this is not very efficient for large lists, but hey, whatever
-     * floats your boat. I sometimes use it because I'm an idiot.
-     */
-
-    for (elem = tq_first_(tq); elem != NULL; elem = temp)
-    {
-        temp = tq_next_(elem);
-    }
-
-    if (tq_elem_data_(elem) == data)
-    {
-        return elem;
-    }
-
-    return NULL;
-}
-
-static void *
+void *
 tq_get_at_index_(lz_tailq * tq, int index)
 {
     lz_tailq_elem * elem;

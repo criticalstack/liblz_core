@@ -2,16 +2,21 @@
 #define __LZ_LZAPI_H__
 
 #include <liblz.h>
+#include <stdbool.h>
 #include <sys/tree.h>
 
-#define lz_likely(x)                __builtin_expect(!!(x), 1)
-#define lz_unlikely(x)              __builtin_expect(!!(x), 0)
+#define lz_likely(x)   __builtin_expect(!!(x), 1)
+#define lz_unlikely(x) __builtin_expect(!!(x), 0)
+
+#define lz_isascii(c)  ((unsigned char)(c) - 040u < 0137u)
 
 #define lz_alias(_name, _aliasname) \
     __typeof(_name) _aliasname __attribute__((alias(# _name)))
 
-#define lz_isascii(c) \
-    ((unsigned char)(c) - 040u < 0137u)
+#define lz_align(d, a) (((d) + (a - 1)) & ~(a - 1))
+
+#define lz_align_ptr(p, a) \
+    (u_char *)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
 
 #define lz_safe_free(_var, _freefn) do { \
         _freefn((_var));                 \
@@ -131,33 +136,5 @@
 
 #define lz_str30_cmp(m, c0, c1, c2, c3) \
     *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
-
-static inline int
-lz_atoi(const char * line, size_t n)
-{
-    int value;
-
-    if (lz_unlikely(n == 0))
-    {
-        return 0;
-    }
-
-    for (value = 0; n--; line++)
-    {
-        if (lz_unlikely(*line < '0' || *line > '9'))
-        {
-            return -1;
-        }
-
-        value = value * 10 + (*line - '0');
-    }
-
-    if (value < 0)
-    {
-        return -1;
-    } else {
-        return value;
-    }
-}
 
 #endif
