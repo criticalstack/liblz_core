@@ -59,10 +59,7 @@ tq_new_(void)
 {
     lz_tailq * tq;
 
-    tq = malloc(sizeof(lz_tailq));
-
-    if (lz_unlikely((tq = malloc(sizeof(lz_tailq)))))
-    {
+    if ((tq = malloc(sizeof(lz_tailq))) == NULL) {
         return NULL;
     }
 
