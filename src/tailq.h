@@ -1,5 +1,4 @@
-#ifndef __LZ_TAILQ_H__
-#define __LZ_TAILQ_H__
+#pragma once
 
 struct lz_tailq_elem;
 struct lz_tailq;
@@ -36,6 +35,3 @@ LZ_EXPORT int             lz_tailq_elem_remove(lz_tailq_elem * elem);
 
 /* backwards compat */
 #define lz_tailq_for_each lz_tailq_foreach
-
-#endif
-

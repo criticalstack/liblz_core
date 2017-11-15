@@ -1,5 +1,4 @@
-#ifndef __LZ_LZAPI_H__
-#define __LZ_LZAPI_H__
+#pragma once
 
 #include <liblz.h>
 #include <stdbool.h>
@@ -158,5 +157,3 @@ lz_atoi(const char * line, size_t n) {
         return value;
     }
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef __LZ_FILE_H__
-#define __LZ_FILE_H__
+#pragma once
 
 #include <dirent.h>
 
@@ -7,9 +6,9 @@
  * @brief the callback function decl.
  * @return 0 on success, -1 on error
  */
-typedef int (*lz_file_readdir_iter)(struct dirent *,
-                                    const char *,
-                                    const char *, void *);
+typedef int (* lz_file_readdir_iter)(struct dirent *,
+    const char *,
+    const char *, void *);
 
 
 /**
@@ -55,5 +54,3 @@ int lz_file_readdir(const char * path,
 int lz_file_concat(char ** out,
     const char           * prefix,
     const char           * postfix);
-
-#endif

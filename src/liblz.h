@@ -1,6 +1,4 @@
-#ifndef __LIBLZ_H__
-#define __LIBLZ_H__
-
+#pragma once
 
 #if (defined __GNUC__ && __GNUC__ >= 4) || defined __INTEL_COMPILER || defined __clang__
 #define LZ_EXPORT __attribute__ ((visibility("default")))
@@ -12,5 +10,3 @@
 #include <liblz/core/lz_tailq.h>
 #include <liblz/core/lz_kvmap.h>
 #include <liblz/core/lz_file.h>
-
-#endif

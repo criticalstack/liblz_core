@@ -9,7 +9,7 @@
 #include "lzapi.h"
 #include "kvmap.h"
 
-typedef uint32_t (*hash_fn)(const char * key, size_t len);
+typedef uint32_t (* hash_fn)(const char * key, size_t len);
 
 static inline uint32_t _fnv_hash(const char * data, size_t len);
 static inline uint32_t _crc32_hash(const char * data, size_t len);
@@ -496,4 +496,3 @@ _djb2_hash(const char * str, size_t len) {
 
     return hash;
 }
-

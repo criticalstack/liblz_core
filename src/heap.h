@@ -1,5 +1,4 @@
-#ifndef __LZ_HEAP_H__
-#define __LZ_HEAP_H__
+#pragma once
 
 #include <liblz.h>
 
@@ -38,6 +37,3 @@ LZ_EXPORT void * lz_heap_alloc(lz_heap * heap);
  * @param d data that was returned from lz_heap_alloc()
  */
 LZ_EXPORT void lz_heap_free(lz_heap * heap, void * d);
-
-#endif
-

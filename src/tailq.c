@@ -288,8 +288,7 @@ tq_foreach_(lz_tailq * tq, lz_tailq_iterfn iterfn, void * arg)
         return -1;
     }
 
-    TAILQ_FOREACH_SAFE(elem, &tq->elems, next, temp)
-    {
+    TAILQ_FOREACH_SAFE(elem, &tq->elems, next, temp) {
         if ((sres = (iterfn)(elem, arg)))
         {
             return sres;
