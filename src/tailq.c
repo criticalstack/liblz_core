@@ -350,4 +350,16 @@ tq_get_at_index_(lz_tailq * tq, int index)
 lz_alias(tq_new_, lz_tailq_new);
 lz_alias(tq_free_, lz_tailq_free);
 lz_alias(tq_size_, lz_tailq_size);
+lz_alias(tq_foreach_, lz_tailq_foreach);
+lz_alias(tq_get_at_index_, lz_tailq_get_at_index);
+lz_alias(tq_append_, lz_tailq_append);
+lz_alias(tq_prepend_, lz_tailq_prepend);
+lz_alias(tq_first_, lz_tailq_first);
+lz_alias(tq_last_, lz_tailq_last);
+lz_alias(tq_next_, lz_tailq_next);
+lz_alias(tq_prev_, lz_tailq_prev);
+lz_alias(tq_elem_head_, lz_tailq_elem_head);
+lz_alias(tq_elem_data_, lz_tailq_elem_data);
+lz_alias(tq_elem_remove_, lz_tailq_elem_remove);
+
 
